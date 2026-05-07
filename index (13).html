@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Deflectores & Canaletas</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f1117;--bg2:#161820;--bg3:#1d1f2a;--bg4:#252836;--bg5:#2d3045;
+  --border:#2a2d3e;--border2:#353850;
+  --text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;
+  --uso:#4A9EFF;--uso-bg:rgba(74,158,255,.13);--uso-bd:rgba(74,158,255,.3);
+  --proc:#F5A623;--proc-bg:rgba(245,166,35,.13);--proc-bd:rgba(245,166,35,.3);
+  --listo:#3ddc84;--listo-bg:rgba(61,220,132,.13);--listo-bd:rgba(61,220,132,.3);
+  --venc:#ff4d4d;--venc-bg:rgba(255,77,77,.13);--venc-bd:rgba(255,77,77,.3);
+  --none-bg:rgba(85,88,112,.10);
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;height:100%;}
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+.cal-bar{display:flex;align-items:center;gap:6px;background:var(--bg2);padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.cal-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text2);transition:all .15s;}
+.cal-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--uso);}
+.cal-btn.hoy{background:var(--proc);color:#1a1200;border-color:var(--proc);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;width:auto;padding:0 14px;}
+.cal-date{flex:1;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.1em;color:var(--text);text-transform:uppercase;}
+.sync-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:0 12px;height:30px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.sync-btn:hover{color:var(--listo);border-color:var(--listo-bd);}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--listo);flex-shrink:0;}
+.sdot.err{background:var(--venc);}.sdot.spin{background:var(--proc);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.stats-bar{display:flex;gap:1px;background:var(--border);flex-shrink:0;}
+.stat{flex:1;background:var(--bg2);padding:8px 14px;display:flex;flex-direction:column;gap:2px;cursor:pointer;transition:background .1s;}
+.stat:hover{background:var(--bg3);}.stat.active{background:var(--bg4);}
+.stat-n{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;line-height:1;}
+.stat-l{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-family:'Barlow Condensed',sans-serif;font-weight:600;}
+.st-uso .stat-n{color:var(--uso);}.st-proc .stat-n{color:var(--proc);}.st-lst .stat-n{color:var(--listo);}.st-ven .stat-n{color:var(--venc);}.st-sin .stat-n{color:var(--text3);}.st-all .stat-n{color:var(--text2);}
+
+.tabs-row{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.tab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:10px 20px;cursor:pointer;color:var(--text2);border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;transition:all .15s;}
+.tab:hover{color:var(--text);}.tab.active{color:var(--proc);border-bottom-color:var(--proc);}
+
+.err-bar{display:none;background:var(--venc-bg);border-bottom:1px solid var(--venc-bd);color:var(--venc);padding:7px 16px;font-family:'Barlow Condensed',sans-serif;font-size:12px;flex-shrink:0;}
+
+.table-outer{overflow:auto;flex:1;}
+table{width:100%;border-collapse:collapse;}
+thead{position:sticky;top:0;z-index:10;}
+thead tr{background:var(--bg3);}
+thead th{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:7px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border2);}
+.tr-grp td{background:var(--bg3);padding:5px 14px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.gdot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle;}
+tr.dr{border-bottom:1px solid var(--border);transition:background .1s;}
+tr.dr:hover{background:var(--bg3);}
+td{padding:8px 14px;vertical-align:middle;}
+tr.dr td:first-child{border-left:3px solid transparent;}
+tr.dr.s-uso  td:first-child{border-left-color:var(--uso);}
+tr.dr.s-proc td:first-child{border-left-color:var(--proc);}
+tr.dr.s-lst  td:first-child{border-left-color:var(--listo);}
+tr.dr.s-ven  td:first-child{border-left-color:var(--venc);}
+
+.td-par{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;color:var(--text);min-width:40px;}
+.td-lin{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;color:var(--text2);}
+.td-med{font-size:11px;color:var(--text3);}
+.td-resp{font-size:11px;color:var(--text3);}
+.td-fecha{font-size:10px;color:var(--text3);font-family:'Barlow Condensed',sans-serif;white-space:nowrap;}
+.badge{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:3px;display:inline-block;white-space:nowrap;}
+.b-uso {background:var(--uso-bg);color:var(--uso);border:1px solid var(--uso-bd);}
+.b-proc{background:var(--proc-bg);color:var(--proc);border:1px solid var(--proc-bd);}
+.b-lst {background:var(--listo-bg);color:var(--listo);border:1px solid var(--listo-bd);}
+.b-ven {background:var(--venc-bg);color:var(--venc);border:1px solid var(--venc-bd);}
+.b-sin {background:var(--none-bg);color:var(--text3);border:1px solid var(--border);}
+
+.tl-wrap{display:flex;flex-direction:column;gap:3px;min-width:140px;}
+.tl-bar{display:flex;height:5px;border-radius:2px;overflow:hidden;background:var(--bg5);}
+.tl-u{background:var(--uso);}.tl-p{background:var(--proc);}.tl-r{background:var(--bg5);}
+.tl-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);}
+
+.td-info{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;white-space:nowrap;}
+.c-uso{color:var(--uso);}.c-proc{color:var(--proc);}.c-lst{color:var(--listo);}.c-ven{color:var(--venc);}.c-sin{color:var(--text3);}
+.msg-row td{text-align:center;padding:48px;font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="cal-bar">
+  <button class="cal-btn" onclick="sd(-7)">◀◀</button>
+  <button class="cal-btn" onclick="sd(-1)">◀</button>
+  <div class="cal-date" id="cal-label"></div>
+  <button class="cal-btn" onclick="sd(1)">▶</button>
+  <button class="cal-btn" onclick="sd(7)">▶▶</button>
+  <button class="cal-btn hoy" onclick="gt()">HOY</button>
+  <button class="sync-btn" onclick="fetchData()">
+    <span class="sdot" id="sdot"></span><span id="stxt">SINCRONIZAR</span>
+  </button>
+</div>
+<div class="err-bar" id="err-bar"></div>
+
+<div class="stats-bar">
+  <div class="stat st-all active" onclick="setF('all',this)"><div class="stat-n" id="sn-all">—</div><div class="stat-l">Total</div></div>
+  <div class="stat st-uso"  onclick="setF('uso',this)"> <div class="stat-n" id="sn-uso">—</div><div class="stat-l">En uso</div></div>
+  <div class="stat st-proc" onclick="setF('proc',this)"><div class="stat-n" id="sn-proc">—</div><div class="stat-l">En proceso</div></div>
+  <div class="stat st-lst"  onclick="setF('lst',this)"> <div class="stat-n" id="sn-lst">—</div><div class="stat-l">Listos</div></div>
+  <div class="stat st-ven"  onclick="setF('ven',this)"> <div class="stat-n" id="sn-ven">—</div><div class="stat-l">Vencidos</div></div>
+  <div class="stat st-sin"  onclick="setF('sin',this)"> <div class="stat-n" id="sn-sin">—</div><div class="stat-l">Sin datos</div></div>
+</div>
+
+<div class="tabs-row">
+  <button class="tab active" onclick="setT('all',this)">Todo</button>
+  <button class="tab" onclick="setT('DEFLECTOR',this)">Deflectores</button>
+  <button class="tab" onclick="setT('CANALETA',this)">Canaletas</button>
+</div>
+
+<div class="table-outer">
+  <table>
+    <thead><tr>
+      <th>Par</th>
+      <th>Línea</th>
+      <th>Tipo</th>
+      <th>Medida</th>
+      <th>Estado</th>
+      <th style="min-width:150px">Ciclo (30d uso + 2d proceso)</th>
+      <th>Info</th>
+      <th>Fecha ref.</th>
+      <th>Próx. venc.</th>
+      <th>Responsable</th>
+    </tr></thead>
+    <tbody id="tbody"><tr class="msg-row"><td colspan="10">Cargando...</td></tr></tbody>
+  </table>
+</div>
+</div>
+
+<script>
+// ── URL del script ────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby38u9zom0EiXpI7KhuGCncm6hnrFX3OYIUIT01dXr0bBP-58iIPEbaRZzoZHwX43aU/exec';
+
+const DIAS_USO=30, DIAS_PROC=2, CICLO=32;
+
+// ── GRUPOS DE PARES ───────────────────────────────────────────
+const GRUPOS = [
+  {tipo:'DEFLECTOR', med:'1 3/4', gid:'134_L24',       lineas:['L24'],                                         pares:['4A']},
+  {tipo:'DEFLECTOR', med:'1 1/8', gid:'118_L22232433', lineas:['L22','L23A','L23B','L32'],                     pares:['A','B','C','D','E','F','G','I']},
+  {tipo:'DEFLECTOR', med:'1 1/4', gid:'114_L222333',   lineas:['L22','L23A','L23B','L33A','L33B'],             pares:['A','B','C','D','E','F']},
+  {tipo:'DEFLECTOR', med:'1 1/4', gid:'134114_L31',    lineas:['L31A','L31B'],                                 pares:['1A','1B','1C']},
+  {tipo:'DEFLECTOR', med:'1 3/4', gid:'134114_L31',    lineas:['L31A','L31B'],                                 pares:['1A','1B','1C']},
+  {tipo:'DEFLECTOR', med:'1 3/4', gid:'134_L21222332', lineas:['L21','L22','L23A','L23B','L32','L33A','L33B'], pares:['A','B','C','D','E']},
+  {tipo:'CANALETA',  med:'1 3/4', gid:'134_L24',       lineas:['L24'],                                         pares:['4A']},
+  {tipo:'CANALETA',  med:'1 1/8', gid:'118_L22232433', lineas:['L22','L23A','L23B','L32'],                     pares:['A','B','C','D','E','F','G','I']},
+  {tipo:'CANALETA',  med:'1 1/4', gid:'114_L222333',   lineas:['L22','L23A','L23B','L33A','L33B'],             pares:['A','B','C','D','E','F']},
+  {tipo:'CANALETA',  med:'1 1/4', gid:'134114_L31',    lineas:['L31A','L31B'],                                 pares:['1A','1B','1C']},
+  {tipo:'CANALETA',  med:'1 3/4', gid:'134114_L31',    lineas:['L31A','L31B'],                                 pares:['1A','1B','1C']},
+  {tipo:'CANALETA',  med:'1 3/4', gid:'134_L21222332', lineas:['L21','L22','L23A','L23B','L32','L33A','L33B'], pares:['A','B','C','D','E']},
+];
+
+const META={
+  uso: {label:'En uso',    badge:'b-uso', ic:'c-uso', dot:'#4A9EFF', sc:'s-uso'},
+  proc:{label:'En proceso',badge:'b-proc',ic:'c-proc',dot:'#F5A623', sc:'s-proc'},
+  lst: {label:'Listo',     badge:'b-lst', ic:'c-lst', dot:'#3ddc84', sc:'s-lst'},
+  ven: {label:'Vencido',   badge:'b-ven', ic:'c-ven', dot:'#ff4d4d', sc:'s-ven'},
+  sin: {label:'Sin datos', badge:'b-sin', ic:'c-sin', dot:'#555870', sc:''},
+};
+const PRIO={uso:4,proc:3,ven:2,lst:1,sin:0};
+
+let sheetRows=[], ultimaSalida={}, cur=new Date(), tipoF='all', estF='all';
+
+// ── UTILS ─────────────────────────────────────────────────────
+function pd(s){
+  if(!s) return null;
+  try{
+    // Soporta "yyyy-MM-dd" y "yyyy-MM-dd HH:mm:ss"
+    const part = s.split(' ')[0];
+    const[y,m,d]=part.split('-').map(Number);
+    if(y<2000||y>2100) return null;
+    return new Date(y,m-1,d);
+  }catch(e){return null;}
+}
+function dd(a,b){return Math.round((b-a)/86400000);}
+function fs(s){
+  if(!s) return '—';
+  try{
+    const part=s.split(' ')[0];
+    const[y,m,d]=part.split('-');
+    return `${d}/${m}/${y.slice(2)}`;
+  }catch(e){return '—';}
+}
+const MES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const DIA=['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+function fmtD(d){return`${DIA[d.getDay()]}, ${d.getDate()} DE ${MES[d.getMonth()]} DE ${d.getFullYear()}`;}
+function extraerPar(val){if(!val)return null;return val.trim().replace(/^1\s*[13]\/[48]\s+/,'').trim().toUpperCase()||null;}
+
+// ── FETCH ─────────────────────────────────────────────────────
+async function fetchData(){
+  setSS('spin','CARGANDO...');
+  try{
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now());
+    const json=await r.json();
+    if(!json.ok) throw new Error('Script error');
+    sheetRows=json.rows||[];
+    ultimaSalida=json.ultimaSalida||{};
+    setSS('ok','SINCRONIZADO');
+    setErr(null);
+  }catch(err){
+    setSS('err','SIN CONEXIÓN');
+    setErr('Sin conexión al sheet — '+err.message);
+    sheetRows=[]; ultimaSalida={};
+  }
+  render();
+}
+function setSS(s,t){const d=document.getElementById('sdot');d.className='sdot'+(s==='err'?' err':s==='spin'?' spin':'');document.getElementById('stxt').textContent=t;}
+function setErr(m){const b=document.getElementById('err-bar');if(!m){b.style.display='none';return;}b.style.display='block';b.textContent='⚠ '+m;}
+
+// ── ÍNDICE: pares actualmente EN USO ──────────────────────────
+// key: "TIPO|GID|PAR" → fila del sheet
+function buildIndex(){
+  const idx={};
+  sheetRows.forEach(row=>{
+    (row.pares||[]).forEach(p=>{
+      const par=p.par||extraerPar(p.valor||'');
+      const gid=p.grupoId||'';
+      if(!par||!gid) return;
+      const key=row.tipo+'|'+gid+'|'+par;
+      if(!idx[key]) idx[key]=row;
+    });
+  });
+  return idx;
+}
+
+// ── CALCULAR ESTADO ───────────────────────────────────────────
+// PAR EN USO: tiene fila en el sheet con la celda llena
+function calcUso(fechaEntrada, proxVenc, ref){
+  const ent=pd(fechaEntrada), ven=pd(proxVenc);
+  if(!ent||!ven) return {pu:50,pp:0,info:'Sin fecha de vencimiento'};
+  const usados=dd(ent,ref);
+  const resta=dd(ref,ven);
+  const pu=Math.min(100,Math.max(0,Math.round((usados/DIAS_USO)*100)));
+  let info;
+  if(resta>0) info=`Vence en ${resta}d`;
+  else if(resta===0) info='Vence hoy';
+  else info=`Venció hace ${-resta}d`;
+  return {pu, pp:0, info};
+}
+
+// PAR LIBRE: no está en ninguna celda del sheet
+// Usa ultimaSalida para saber cuándo salió
+// Si no hay historial, queda como LISTO
+function calcLibre(gid, tipo, par, ref){
+  const key=tipo+'|'+gid+'|'+par;
+  const salida=ultimaSalida[key];
+
+  if(!salida||!salida.fechaSalida){
+    // Sin historial → Listo (disponible)
+    return {f:'lst', pu:0, pp:0, info:'Listo', fechaRef:'—'};
+  }
+
+  const salidaDate=pd(salida.fechaSalida);
+  if(!salidaDate) return {f:'lst', pu:0, pp:0, info:'Listo', fechaRef:'—'};
+
+  const diasPasados=dd(salidaDate, ref);
+
+  if(diasPasados<0){
+    // La fecha de salida es posterior a ref (calendario hacia atrás)
+    return {f:'uso', pu:0, pp:0, info:'En uso', fechaRef:fs(salida.fechaSalida)};
+  }
+  if(diasPasados===0){
+    return {f:'proc', pu:100, pp:0, info:'Listo en 2d', fechaRef:fs(salida.fechaSalida)};
+  }
+  if(diasPasados<=DIAS_PROC){
+    const rp=DIAS_PROC-diasPasados;
+    const pp=Math.round((diasPasados/CICLO)*100);
+    return {f:'proc', pu:100, pp, info:rp>0?`Listo en ${rp}d`:'Listo hoy', fechaRef:fs(salida.fechaSalida)};
+  }
+  // Pasaron más de 2 días → Listo
+  return {f:'lst', pu:0, pp:0, info:'Listo', fechaRef:fs(salida.fechaSalida)};
+}
+
+// ── CONTROLES ─────────────────────────────────────────────────
+function sd(n){cur=new Date(cur.getTime()+n*86400000);render();}
+function gt(){cur=new Date();render();}
+function setT(t,el){tipoF=t;document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');render();}
+function setF(f,el){estF=f;document.querySelectorAll('.stat').forEach(b=>b.classList.remove('active'));el.classList.add('active');render();}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  document.getElementById('cal-label').textContent=fmtD(cur);
+  const ref=cur;
+  const idx=buildIndex();
+  const counts={uso:0,proc:0,lst:0,ven:0,sin:0};
+  let html='';
+
+  GRUPOS.forEach(g=>{
+    if(tipoF!=='all'&&g.tipo!==tipoF) return;
+    const filas=[];
+
+    g.pares.forEach(par=>{
+      const key=g.tipo+'|'+g.gid+'|'+par;
+      const sr=idx[key];
+      let f, pu, pp, info, linea, fechaRef, vStr, resp;
+
+      if(sr){
+        // ── PAR EN USO ──────────────────────────────────────
+        f='uso'; linea=sr.linea; resp=sr.responsable||'';
+        fechaRef=fs(sr.fechaEntrada); vStr=fs(sr.proxVenc);
+        const c=calcUso(sr.fechaEntrada, sr.proxVenc, ref);
+        pu=c.pu; pp=c.pp; info=c.info;
+      } else {
+        // ── PAR LIBRE: proceso o listo ───────────────────────
+        linea='—'; resp=''; vStr='—';
+        const c=calcLibre(g.gid, g.tipo, par, ref);
+        f=c.f; pu=c.pu; pp=c.pp; info=c.info; fechaRef=c.fechaRef;
+      }
+
+      counts[f]=(counts[f]||0)+1;
+      if(estF!=='all'&&f!==estF) return;
+
+      const m=META[f];
+      const pRest=Math.max(0,100-pu-pp);
+      filas.push({par,linea,resp,fechaRef,vStr,f,info,pu,pp,pRest,m});
+    });
+
+    if(!filas.length) return;
+    const peor=filas.reduce((a,b)=>PRIO[a.f]>=PRIO[b.f]?a:b);
+    const mg=META[peor.f];
+
+    html+=`<tr class="tr-grp"><td colspan="10">
+      <span style="display:inline-flex;align-items:center;">
+        <span class="gdot" style="background:${mg.dot}"></span>
+        ${g.tipo}&nbsp;·&nbsp;<strong>${g.med}</strong>&nbsp;·&nbsp;${g.lineas.join(', ')}
+      </span>
+    </td></tr>`;
+
+    filas.forEach(f=>{
+      html+=`<tr class="dr ${f.m.sc}">
+        <td class="td-par">${f.par}</td>
+        <td class="td-lin">${f.linea}</td>
+        <td style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;">${g.tipo}</td>
+        <td class="td-med">${g.med}</td>
+        <td><span class="badge ${f.m.badge}">${f.m.label}</span></td>
+        <td><div class="tl-wrap">
+          <div class="tl-bar">
+            <div class="tl-u" style="width:${f.pu}%"></div>
+            <div class="tl-p" style="width:${f.pp}%"></div>
+            <div class="tl-r" style="width:${f.pRest}%"></div>
+          </div>
+          <div class="tl-lbl"><span>Entrada</span><span>30d</span><span>32d</span></div>
+        </div></td>
+        <td class="td-info ${f.m.ic}">${f.info}</td>
+        <td class="td-fecha">${f.fechaRef}</td>
+        <td class="td-fecha">${f.vStr}</td>
+        <td class="td-resp">${f.resp}</td>
+      </tr>`;
+    });
+  });
+
+  if(!html) html=`<tr class="msg-row"><td colspan="10">Sin resultados</td></tr>`;
+  document.getElementById('tbody').innerHTML=html;
+
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  ['all','uso','proc','lst','ven','sin'].forEach(k=>{
+    document.getElementById('sn-'+k).textContent=k==='all'?total:(counts[k]||0);
+  });
+}
+
+fetchData();
+</script>
+</body>
+</html>
